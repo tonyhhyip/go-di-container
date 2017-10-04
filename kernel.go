@@ -1,27 +1,26 @@
 package container
 
-type Kernel struct {
+type kernel struct {
 	*container
 	providers []ServiceProvider
 	defered   map[string]ServiceProvider
 	bootstrap bool
 }
 
-func NewKernel() *Kernel {
-	kernel := Kernel{
+func NewKernel() *kernel {
+	kernel := kernel{
 		container: NewContainer(),
 		bootstrap: false,
 		providers: make([]ServiceProvider, 0),
 		defered:   make(map[string]ServiceProvider),
 	}
+
+	kernel.Flush()
+
 	return &kernel
 }
 
-func (kernel *Kernel) Boot() {
-
-}
-
-func (kernel *Kernel) Make(abstract string) interface{} {
+func (kernel *kernel) Make(abstract string) interface{} {
 	if kernel.bootstrap {
 		for _, provider := range kernel.providers {
 			if !provider.IsBooted() {
@@ -38,12 +37,12 @@ func (kernel *Kernel) Make(abstract string) interface{} {
 	return kernel.container.Make(abstract)
 }
 
-func (kernel *Kernel) Flush() {
+func (kernel *kernel) Flush() {
 	kernel.container.Flush()
 	kernel.providers = make([]ServiceProvider, 0)
 }
 
-func (kernel *Kernel) loadDeferServiceProvider(abstract string) {
+func (kernel *kernel) loadDeferServiceProvider(abstract string) {
 	provider := kernel.defered[abstract]
 	if !provider.IsBooted() {
 		provider.Register(kernel)
@@ -54,7 +53,7 @@ func (kernel *Kernel) loadDeferServiceProvider(abstract string) {
 	delete(kernel.defered, abstract)
 }
 
-func (kernel *Kernel) Register(builder ServiceProviderBuilder) {
+func (kernel *kernel) Register(builder ServiceProviderBuilder) {
 	instance := builder(kernel)
 
 	if instance.IsDefer() {

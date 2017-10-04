@@ -1,16 +1,5 @@
 package container
 
-type ServiceProviderBuilder func(container Container) ServiceProvider
-
-type ServiceProvider interface {
-	SetContainer(container Container)
-	IsDefer() bool
-	IsBooted() bool
-	Boot()
-	Register(container Container)
-	Provides() []string
-}
-
 type AbstractServiceProvider struct {
 	container Container
 	defered   bool
