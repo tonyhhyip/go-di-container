@@ -6,6 +6,13 @@ type AbstractServiceProvider struct {
 	booted    bool
 }
 
+func NewAbstractServiceProvider(deferLoading bool) *AbstractServiceProvider {
+	return &AbstractServiceProvider{
+		defered: deferLoading,
+		booted:  false,
+	}
+}
+
 func (sp *AbstractServiceProvider) IsBooted() bool {
 	return sp.booted
 }
