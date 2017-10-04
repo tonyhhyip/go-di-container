@@ -1,6 +1,6 @@
 package container
 
-type BuilderFunc func(app *container) interface{}
+type BuilderFunc func(app Container) interface{}
 
 type ServiceProviderBuilder func(container Container) ServiceProvider
 
