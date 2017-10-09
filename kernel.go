@@ -34,7 +34,7 @@ func (kernel *kernel) Make(abstract string) interface{} {
 		kernel.loadDeferServiceProvider(abstract)
 	}
 
-	return kernel.container.Make(abstract)
+	return kernel.container.makeWithContainer(kernel, abstract)
 }
 
 func (kernel *kernel) Flush() {
