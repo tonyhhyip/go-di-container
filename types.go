@@ -2,7 +2,7 @@ package container
 
 type BuilderFunc func(app Container) interface{}
 
-type ServiceProviderBuilder func(container Container) ServiceProvider
+type ServiceProviderBuilder func(app Container) ServiceProvider
 
 type Container interface {
 	Singleton(abstract string, builder BuilderFunc)
