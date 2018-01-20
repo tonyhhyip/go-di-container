@@ -6,7 +6,7 @@ type container struct {
 	instances  *sync.Map
 	bindings   *sync.Map
 	alias      *sync.Map
-	createLock sync.Locker
+	createLock map[string]sync.Locker
 }
 
 type bindBond struct {
@@ -16,7 +16,7 @@ type bindBond struct {
 
 func NewContainer() *container {
 	container := container{
-		createLock: new(sync.Mutex),
+		createLock: make(map[string]sync.Locker),
 	}
 	container.Flush()
 	return &container
@@ -24,6 +24,7 @@ func NewContainer() *container {
 
 func (c *container) Singleton(abstract string, builder BuilderFunc) {
 	c.registerBinding(abstract, builder, true)
+	c.createLock[abstract] = new(sync.Mutex)
 }
 
 func (c *container) Bind(abstract string, builder BuilderFunc) {
@@ -53,8 +54,8 @@ func (c *container) MakeWithContainer(container Container, abstract string) (ins
 	}
 
 	if c.isShared(name) {
-		c.createLock.Lock()
-		defer c.createLock.Unlock()
+		c.createLock[name].Lock()
+		defer c.createLock[name].Unlock()
 	}
 
 	builder := c.getConstructor(name)
