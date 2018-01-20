@@ -1,18 +1,24 @@
 package container
 
+import (
+	"sync"
+)
+
 type kernel struct {
 	Container
-	providers []ServiceProvider
-	defered   map[string]ServiceProvider
-	bootstrap bool
+	providers     []ServiceProvider
+	providersLock sync.Locker
+	defered       *sync.Map
+	bootstrap     bool
 }
 
 func NewKernel() *kernel {
 	kernel := kernel{
-		Container: NewContainer(),
-		bootstrap: false,
-		providers: make([]ServiceProvider, 0),
-		defered:   make(map[string]ServiceProvider),
+		Container:     NewContainer(),
+		bootstrap:     false,
+		providers:     make([]ServiceProvider, 0),
+		providersLock: new(sync.Mutex),
+		defered:       new(sync.Map),
 	}
 
 	kernel.Flush()
@@ -30,7 +36,7 @@ func (kernel *kernel) Make(abstract string) interface{} {
 		kernel.bootstrap = false
 	}
 
-	if _, exists := kernel.defered[abstract]; exists {
+	if _, exists := kernel.defered.Load(abstract); exists {
 		kernel.loadDeferServiceProvider(abstract)
 	}
 
@@ -39,18 +45,21 @@ func (kernel *kernel) Make(abstract string) interface{} {
 
 func (kernel *kernel) Flush() {
 	kernel.Container.Flush()
+	kernel.providersLock.Lock()
+	defer kernel.providersLock.Unlock()
 	kernel.providers = make([]ServiceProvider, 0)
 }
 
 func (kernel *kernel) loadDeferServiceProvider(abstract string) {
-	provider := kernel.defered[abstract]
+	val, _ := kernel.defered.Load(abstract)
+	provider := val.(ServiceProvider)
 	if !provider.IsBooted() {
 		provider.Register(kernel)
 		boot(provider)
-		kernel.providers = append(kernel.providers, provider)
+		kernel.appendProvider(provider)
 	}
 
-	delete(kernel.defered, abstract)
+	kernel.defered.Delete(abstract)
 }
 
 func (kernel *kernel) Register(builder ServiceProviderBuilder) {
@@ -58,7 +67,7 @@ func (kernel *kernel) Register(builder ServiceProviderBuilder) {
 
 	if instance.IsDefer() {
 		for _, provide := range instance.Provides() {
-			kernel.defered[provide] = instance
+			kernel.defered.Store(provide, instance)
 		}
 
 		return
@@ -67,6 +76,13 @@ func (kernel *kernel) Register(builder ServiceProviderBuilder) {
 	if !instance.IsBooted() {
 		instance.Register(kernel)
 		kernel.bootstrap = true
-		kernel.providers = append(kernel.providers, instance)
+
+		kernel.appendProvider(instance)
 	}
+}
+
+func (kernel *kernel) appendProvider(provider ServiceProvider) {
+	kernel.providersLock.Lock()
+	defer kernel.providersLock.Unlock()
+	kernel.providers = append(kernel.providers, provider)
 }
