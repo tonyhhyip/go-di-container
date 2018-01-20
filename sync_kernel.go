@@ -10,7 +10,6 @@ type syncKernel struct {
 
 func NewSyncKernel() *syncKernel {
 	base := NewKernel()
-	base.Container = NewSyncContainer()
 
 	return &syncKernel{
 		kernel:        base,

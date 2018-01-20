@@ -1,9 +1,11 @@
 package container
 
+import "sync"
+
 type container struct {
-	instances map[string]interface{}
-	bindings  map[string]bindBond
-	alias     map[string]string
+	instances *sync.Map
+	bindings  *sync.Map
+	alias     *sync.Map
 }
 
 type bindBond struct {
@@ -26,19 +28,19 @@ func (c *container) Bind(abstract string, builder BuilderFunc) {
 }
 
 func (c *container) registerBinding(abstract string, builder BuilderFunc, shared bool) {
-	c.bindings[abstract] = bindBond{
+	c.bindings.Store(abstract, bindBond{
 		Builder: builder,
 		Shared:  shared,
-	}
+	})
 }
 
 func (c *container) Instance(abstract string, instance interface{}) {
-	c.instances[abstract] = instance
+	c.instances.Store(abstract, instance)
 }
 func (c *container) MakeWithContainer(container Container, abstract string) (instance interface{}) {
 	name := c.getAlias(abstract)
 
-	if instance, exists := c.instances[name]; exists {
+	if instance, exists := c.instances.Load(name); exists {
 		return instance
 	}
 
@@ -50,7 +52,7 @@ func (c *container) MakeWithContainer(container Container, abstract string) (ins
 	instance = builder(container)
 
 	if c.isShared(name) {
-		c.instances[name] = instance
+		c.instances.Store(name, instance)
 	}
 
 	return instance
@@ -62,39 +64,41 @@ func (c *container) Make(abstract string) (instance interface{}) {
 
 func (c *container) Flush() {
 	c.ForgetInstances()
-	c.alias = make(map[string]string)
-	c.bindings = make(map[string]bindBond)
+	c.alias = new(sync.Map)
+	c.bindings = new(sync.Map)
 }
 
 func (c *container) ForgetInstances() {
-	c.instances = make(map[string]interface{})
+	c.instances = new(sync.Map)
 }
 
 func (c *container) ForgetInstance(abstract string) {
-	delete(c.instances, abstract)
+	c.instances.Delete(abstract)
 }
 
 func (c *container) Alias(name, abstract string) {
-	c.alias[name] = abstract
+	c.alias.Store(name, abstract)
 }
 
 func (c *container) getAlias(name string) string {
-	if val, ok := c.alias[name]; ok {
-		return val
+	if val, ok := c.alias.Load(name); ok {
+		return val.(string)
 	}
 
 	return name
 }
 
 func (c *container) getConstructor(name string) BuilderFunc {
-	return c.bindings[name].Builder
+	val, _ := c.bindings.Load(name)
+	return val.(bindBond).Builder
 }
 
 func (c *container) isShared(name string) bool {
-	return c.bindings[name].Shared
+	val, _ := c.bindings.Load(name)
+	return val.(bindBond).Shared
 }
 
 func (c *container) hasRegister(name string) (exists bool) {
-	_, exists = c.bindings[name]
+	_, exists = c.bindings.Load(name)
 	return
 }
