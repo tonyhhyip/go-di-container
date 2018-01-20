@@ -35,7 +35,7 @@ func (c *container) registerBinding(abstract string, builder BuilderFunc, shared
 func (c *container) Instance(abstract string, instance interface{}) {
 	c.instances[abstract] = instance
 }
-func (c *container) makeWithContainer(container Container, abstract string) (instance interface{}) {
+func (c *container) MakeWithContainer(container Container, abstract string) (instance interface{}) {
 	name := c.getAlias(abstract)
 
 	if instance, exists := c.instances[name]; exists {
@@ -57,7 +57,7 @@ func (c *container) makeWithContainer(container Container, abstract string) (ins
 }
 
 func (c *container) Make(abstract string) (instance interface{}) {
-	return c.makeWithContainer(c, abstract)
+	return c.MakeWithContainer(c, abstract)
 }
 
 func (c *container) Flush() {
