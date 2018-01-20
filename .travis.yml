@@ -1,0 +1,22 @@
+language: go
+sudo: false
+
+cache:
+  directories:
+    - $HOME/.glide
+
+go:
+  - 1.9
+  - 1.9.1
+  - 1.9.2
+
+go_import_path: github.com/tonyhhyip/go-di-container
+
+install:
+  - go get -v github.com/Masterminds/glide
+  - cd $GOPATH/src/github.com/Masterminds/glide && git checkout v0.13.1 && go install && cd -
+  - glide install -v --force
+
+script:
+  - go vet ./...
+  - go test ./...
