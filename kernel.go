@@ -1,7 +1,7 @@
 package container
 
 type kernel struct {
-	*container
+	Container
 	providers []ServiceProvider
 	defered   map[string]ServiceProvider
 	bootstrap bool
@@ -9,7 +9,7 @@ type kernel struct {
 
 func NewKernel() *kernel {
 	kernel := kernel{
-		container: NewContainer(),
+		Container: NewContainer(),
 		bootstrap: false,
 		providers: make([]ServiceProvider, 0),
 		defered:   make(map[string]ServiceProvider),
@@ -34,11 +34,11 @@ func (kernel *kernel) Make(abstract string) interface{} {
 		kernel.loadDeferServiceProvider(abstract)
 	}
 
-	return kernel.container.makeWithContainer(kernel, abstract)
+	return kernel.Container.MakeWithContainer(kernel, abstract)
 }
 
 func (kernel *kernel) Flush() {
-	kernel.container.Flush()
+	kernel.Container.Flush()
 	kernel.providers = make([]ServiceProvider, 0)
 }
 
