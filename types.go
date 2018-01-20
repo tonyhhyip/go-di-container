@@ -5,6 +5,8 @@ type BuilderFunc func(app Container) interface{}
 type ServiceProviderBuilder func(app Container) ServiceProvider
 
 type Container interface {
+	makeWithContainer(container Container, abstract string) (instance interface{})
+
 	Singleton(abstract string, builder BuilderFunc)
 	Bind(abstract string, builder BuilderFunc)
 	Instance(abstract string, instance interface{})
@@ -17,6 +19,9 @@ type Container interface {
 
 type Kernel interface {
 	Container
+
+	loadDeferServiceProvider(abstract string)
+
 	Register(builder ServiceProviderBuilder)
 }
 
