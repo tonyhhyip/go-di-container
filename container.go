@@ -3,9 +3,10 @@ package container
 import "sync"
 
 type container struct {
-	instances *sync.Map
-	bindings  *sync.Map
-	alias     *sync.Map
+	instances  *sync.Map
+	bindings   *sync.Map
+	alias      *sync.Map
+	createLock sync.Locker
 }
 
 type bindBond struct {
@@ -14,7 +15,9 @@ type bindBond struct {
 }
 
 func NewContainer() *container {
-	container := container{}
+	container := container{
+		createLock: new(sync.Mutex),
+	}
 	container.Flush()
 	return &container
 }
@@ -37,6 +40,7 @@ func (c *container) registerBinding(abstract string, builder BuilderFunc, shared
 func (c *container) Instance(abstract string, instance interface{}) {
 	c.instances.Store(abstract, instance)
 }
+
 func (c *container) MakeWithContainer(container Container, abstract string) (instance interface{}) {
 	name := c.getAlias(abstract)
 
@@ -46,6 +50,11 @@ func (c *container) MakeWithContainer(container Container, abstract string) (ins
 
 	if !c.hasRegister(name) {
 		return nil
+	}
+
+	if c.isShared(name) {
+		c.createLock.Lock()
+		defer c.createLock.Unlock()
 	}
 
 	builder := c.getConstructor(name)
