@@ -22,7 +22,7 @@ type bindBond struct {
 func NewContainer() *container {
 	container := container{
 		createLock: make(map[string]sync.Locker),
-		logger:     logrus.New().WithField("lib", "go-di-container"),
+		logger:     logrus.New().WithField("lib", "go-di-container").WithField("component", "container"),
 	}
 	container.Flush()
 	return &container

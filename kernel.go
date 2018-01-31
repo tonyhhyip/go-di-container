@@ -2,6 +2,8 @@ package container
 
 import (
 	"sync"
+
+	"github.com/sirupsen/logrus"
 )
 
 type kernel struct {
@@ -10,20 +12,27 @@ type kernel struct {
 	providersLock sync.Locker
 	defered       *sync.Map
 	bootstrap     bool
+	logger        *logrus.Entry
 }
 
 func NewKernel() *kernel {
+	c := NewContainer()
 	kernel := kernel{
-		Container:     NewContainer(),
+		Container:     c,
 		bootstrap:     false,
 		providers:     make([]ServiceProvider, 0),
 		providersLock: new(sync.Mutex),
 		defered:       new(sync.Map),
+		logger:        c.GetLogger().WithField("component", "kernel"),
 	}
 
 	kernel.Flush()
 
 	return &kernel
+}
+
+func (kernel *kernel) GetLogger() *logrus.Entry {
+	return kernel.logger
 }
 
 func (kernel *kernel) Make(abstract string) interface{} {
@@ -47,11 +56,12 @@ func (kernel *kernel) Flush() {
 	kernel.Container.Flush()
 	kernel.providersLock.Lock()
 	defer kernel.providersLock.Unlock()
+	kernel.GetLogger().Debugf("Clean up lock")
 	kernel.providers = make([]ServiceProvider, 0)
 }
 
 func (kernel *kernel) loadDeferServiceProvider(abstract string) {
-	kernel.GetLogger().Debugf("Load Defer Service Provider %s", abstract)
+	kernel.logger.Debugf("Load Defer Service Provider %s", abstract)
 	val, _ := kernel.defered.Load(abstract)
 	provider := val.(ServiceProvider)
 	if !provider.IsBooted() {
