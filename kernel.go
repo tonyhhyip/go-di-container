@@ -51,6 +51,7 @@ func (kernel *kernel) Flush() {
 }
 
 func (kernel *kernel) loadDeferServiceProvider(abstract string) {
+	kernel.GetLogger().Debugf("Load Defer Service Provider %s", abstract)
 	val, _ := kernel.defered.Load(abstract)
 	provider := val.(ServiceProvider)
 	if !provider.IsBooted() {

@@ -50,6 +50,7 @@ func (c *container) Bind(abstract string, builder BuilderFunc) {
 }
 
 func (c *container) registerBinding(abstract string, builder BuilderFunc, shared bool) {
+	c.logger.Debugf("Add %s (share: %t)", abstract, shared)
 	c.bindings.Store(abstract, bindBond{
 		Builder: builder,
 		Shared:  shared,
@@ -57,21 +58,26 @@ func (c *container) registerBinding(abstract string, builder BuilderFunc, shared
 }
 
 func (c *container) Instance(abstract string, instance interface{}) {
+	c.logger.Debugf("Store instance %s", abstract)
 	c.instances.Store(abstract, instance)
 }
 
 func (c *container) MakeWithContainer(container Container, abstract string) (instance interface{}) {
 	name := c.getAlias(abstract)
+	c.logger.Debugf("Make for %s", name)
 
 	if instance, exists := c.instances.Load(name); exists {
+		c.logger.Debugf("Load exists instance for %s", name)
 		return instance
 	}
 
 	if !c.hasRegister(name) {
+		c.logger.Errorf("%s is not registered", name)
 		return nil
 	}
 
 	if c.isShared(name) {
+		c.logger.Debugf("Lock for %s", name)
 		c.createLock[name].Lock()
 		defer c.createLock[name].Unlock()
 	}
@@ -80,6 +86,7 @@ func (c *container) MakeWithContainer(container Container, abstract string) (ins
 	instance = builder(container)
 
 	if c.isShared(name) {
+		c.logger.Debugf("Store built instance for %s", name)
 		c.instances.Store(name, instance)
 	}
 
@@ -91,24 +98,34 @@ func (c *container) Make(abstract string) (instance interface{}) {
 }
 
 func (c *container) Flush() {
+	c.logger.Debug("Flush container")
+
 	c.ForgetInstances()
+
+	c.logger.Debug("Flush alias")
 	c.alias = new(sync.Map)
+
+	c.logger.Debug("Flush bindings")
 	c.bindings = new(sync.Map)
 }
 
 func (c *container) ForgetInstances() {
+	c.logger.Debug("Forget all instances")
 	c.instances = new(sync.Map)
 }
 
 func (c *container) ForgetInstance(abstract string) {
+	c.logger.Debugf("Forget instance of %s", abstract)
 	c.instances.Delete(abstract)
 }
 
 func (c *container) Alias(name, abstract string) {
+	c.logger.Debugf("Create alias %s => %s", name, abstract)
 	c.alias.Store(name, abstract)
 }
 
 func (c *container) getAlias(name string) string {
+	c.logger.Debugf("Load alias %s", name)
 	if val, ok := c.alias.Load(name); ok {
 		return val.(string)
 	}
@@ -117,16 +134,19 @@ func (c *container) getAlias(name string) string {
 }
 
 func (c *container) getConstructor(name string) BuilderFunc {
+	c.logger.Debugf("Load constructor for %s", name)
 	val, _ := c.bindings.Load(name)
 	return val.(bindBond).Builder
 }
 
 func (c *container) isShared(name string) bool {
+	c.logger.Debugf("Check %s is shared instance", name)
 	val, _ := c.bindings.Load(name)
 	return val.(bindBond).Shared
 }
 
 func (c *container) hasRegister(name string) (exists bool) {
+	c.logger.Debugf("Check %s is registered", name)
 	_, exists = c.bindings.Load(name)
 	return
 }
