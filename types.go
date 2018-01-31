@@ -1,10 +1,15 @@
 package container
 
+import "github.com/sirupsen/logrus"
+
 type BuilderFunc func(app Container) interface{}
 
 type ServiceProviderBuilder func(app Container) ServiceProvider
 
 type Container interface {
+	SetDebug(debug bool)
+	GetLogger() *logrus.Entry
+
 	MakeWithContainer(container Container, abstract string) (instance interface{})
 
 	Singleton(abstract string, builder BuilderFunc)

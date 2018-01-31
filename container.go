@@ -1,12 +1,17 @@
 package container
 
-import "sync"
+import (
+	"sync"
+
+	"github.com/sirupsen/logrus"
+)
 
 type container struct {
 	instances  *sync.Map
 	bindings   *sync.Map
 	alias      *sync.Map
 	createLock map[string]sync.Locker
+	logger     *logrus.Entry
 }
 
 type bindBond struct {
@@ -17,9 +22,22 @@ type bindBond struct {
 func NewContainer() *container {
 	container := container{
 		createLock: make(map[string]sync.Locker),
+		logger:     logrus.New().WithField("lib", "go-di-container"),
 	}
 	container.Flush()
 	return &container
+}
+
+func (c *container) GetLogger() *logrus.Entry {
+	return c.logger
+}
+
+func (c *container) SetDebug(debug bool) {
+	if debug {
+		c.logger.Logger.SetLevel(logrus.DebugLevel)
+	} else {
+		c.logger.Logger.SetLevel(logrus.InfoLevel)
+	}
 }
 
 func (c *container) Singleton(abstract string, builder BuilderFunc) {
